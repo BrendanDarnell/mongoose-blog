@@ -90,16 +90,16 @@ app.put("/blogs/:id", (req, res) => {
     .catch(err => res.status(500).json({ message: "Internal server error" }));
 });
 
-// app.delete("/restaurants/:id", (req, res) => {
-//   Restaurant.findByIdAndRemove(req.params.id)
-//     .then(restaurant => res.status(204).end())
-//     .catch(err => res.status(500).json({ message: "Internal server error" }));
-// });
+app.delete("/blogs/:id", (req, res) => {
+  Restaurant.findByIdAndRemove(req.params.id)
+    .then(restaurant => res.status(204).end())
+    .catch(err => res.status(500).json({ message: "Internal server error" }));
+});
 
-// // catch-all endpoint if client makes request to non-existent endpoint
-// app.use("*", function(req, res) {
-//   res.status(404).json({ message: "Not Found" });
-// });
+// catch-all endpoint if client makes request to non-existent endpoint
+app.use("*", function(req, res) {
+  res.status(404).json({ message: "Not Found" });
+});
 
 // closeServer needs access to a server object, but that only
 // gets created when `runServer` runs, so we declare `server` here

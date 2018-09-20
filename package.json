@@ -2,8 +2,9 @@
   "name": "blog-api-mongoose",
   "version": "1.0.0",
   "description": "",
-  "main": "server.js",
+  "main": "index.js",
   "scripts": {
+    "start": "node server.js",
     "test": "mocha "
   },
   "author": "",
