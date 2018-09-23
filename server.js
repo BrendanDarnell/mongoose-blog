@@ -2,6 +2,7 @@
 
 const express = require("express");
 const mongoose = require("mongoose");
+const authorsRouter = require("./authorsRouter")
 
 // Mongoose internally uses a promise-like object,
 // but its better to make Mongoose use built in es6 promises
@@ -10,16 +11,17 @@ mongoose.Promise = global.Promise;
 // config.js is where we control constants for entire
 // app like PORT and DATABASE_URL
 const { PORT, DATABASE_URL } = require("./config");
-const { Blogs } = require("./models");
+const { Blogs, Authors, Comments } = require("./models");
 
 const app = express();
 app.use(express.json());
+app.use("/authors", authorsRouter)
 
 // GET requests to /restaurants => return 10 restaurants
 app.get("/blogs", (req, res) => {
   Blogs.find()   
     .then(blogs => {
-      console.log(blogs)
+      // console.log(blogs)
       res.json({
         blogs: blogs.map(blog => blog.serialize())
       });
@@ -36,7 +38,12 @@ app.get("/blogs/:id", (req, res) => {
     // this is a convenience method Mongoose provides for searching
     // by the object _id property
     .findById(req.params.id)
-    .then(blog => res.json(blog.serialize()))
+    .populate('author')
+    .then(blog=> {
+      blog.comments.push({content: "comment 1"});
+      return blog;
+    })
+    .then(blog => res.json(blog.serialize2()))
     .catch(err => {
       console.error(err);
       res.status(500).json({ message: "Internal server error" });
@@ -44,7 +51,7 @@ app.get("/blogs/:id", (req, res) => {
 });
 
 app.post("/blogs", (req, res) => {
-  const requiredFields = ["title", "content", "author"];
+  const requiredFields = ["title", "content", "author_id"];
   requiredFields.forEach(field => {
     if (!(field in req.body)) {
       const message = `Missing \`${field}\` in request body`;
@@ -53,10 +60,20 @@ app.post("/blogs", (req, res) => {
     }
   });
 
+  Authors.findById(req.body.author_id)
+  .then(author => {
+    console.log(author);
+  })
+  .catch(err=> {
+    console.error("no author found with id")
+    res.status(400).json({message: `Could not find author with id ${req.body.author_id}`})
+  });
+  
+
   Blogs.create({
    title: req.body.title,
    content: req.body.content,
-   author: {firstName: req.body.author.firstName, lastName: req.body.author.lastName},
+   author: req.body.author_id,
   })
     .then(blog => res.status(201).json(blog.serialize()))
     .catch(err => {
@@ -76,7 +93,7 @@ app.put("/blogs/:id", (req, res) => {
   }
 
   const toUpdate = {};
-  const updateableFields = ["title", "content", "author"];
+  const updateableFields = ["title", "content"];
 
   updateableFields.forEach(field => {
     if (field in req.body) {
@@ -86,9 +103,11 @@ app.put("/blogs/:id", (req, res) => {
 
   Blogs
     .findByIdAndUpdate(req.params.id, { $set: toUpdate })
-    .then(restaurant => res.status(204).end())
+    .then(blog => res.status(204).end())
     .catch(err => res.status(500).json({ message: "Internal server error" }));
 });
+
+
 
 app.delete("/blogs/:id", (req, res) => {
   Restaurant.findByIdAndRemove(req.params.id)
